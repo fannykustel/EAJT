@@ -314,6 +314,44 @@ main {
   transition: opacity .3s;
 }
 .tl-year.show { opacity: 1; }
+
+/* ── EXAM MODE ── */
+#exam-view { display:none; }
+#exam-view.visible { display:block; }
+.exam-picker { max-width:860px; margin:0 auto; padding:2rem; }
+.exam-picker h2 { font-family:'Playfair Display',serif; font-size:1.3rem; color:var(--gold); margin-bottom:1.5rem; }
+.exam-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1rem; }
+.exam-card { background:var(--surf); border:1px solid var(--border); border-radius:8px; padding:1.2rem; cursor:pointer; transition:border-color .15s,background .15s; }
+.exam-card:hover { border-color:var(--gold); background:var(--surf2); }
+.exam-card h3 { font-family:'Playfair Display',serif; font-size:1rem; color:var(--gold); margin-bottom:.4rem; }
+.exam-card p { font-size:.78rem; color:var(--dim); line-height:1.5; }
+.exam-active { max-width:860px; margin:0 auto; padding:1.5rem 2rem 4rem; display:none; }
+.exam-active.visible { display:block; }
+.exam-back { background:transparent; border:1px solid var(--border); color:var(--dim); padding:.35rem .9rem; border-radius:4px; cursor:pointer; font-size:.82rem; margin-bottom:1.5rem; transition:all .15s; }
+.exam-back:hover { border-color:var(--gold); color:var(--gold); }
+.exam-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:1rem 0; border-top:1px solid var(--border); margin-top:1.5rem; }
+.exam-hint { font-size:.8rem; color:var(--dim); }
+.result-box { background:var(--surf); border:1px solid var(--border); border-radius:8px; padding:1rem; margin-top:1.5rem; display:none; }
+.result-box.show { display:block; }
+.result-box h3 { font-size:.9rem; color:var(--gold); margin-bottom:.6rem; }
+.result-box pre { font-size:.75rem; line-height:1.7; white-space:pre-wrap; color:var(--text); background:var(--bg); padding:.75rem; border-radius:6px; border:1px solid var(--border); max-height:280px; overflow-y:auto; }
+.eq-card { background:var(--surf); border:1px solid var(--border); border-radius:6px; margin-bottom:.6rem; overflow:hidden; }
+.eq-card.ok { border-color:#2e7d4f; } .eq-card.err { border-color:#aa3333; } .eq-card.rev { border-color:#6a50aa; }
+.eq-body { display:flex; align-items:flex-start; gap:8px; padding:.75rem 1rem .45rem; }
+.eq-num { font-size:.82rem; color:var(--dim); min-width:1.8rem; padding-top:1px; }
+.eq-text { flex:1; font-size:.88rem; line-height:1.6; }
+.eq-text .sep { color:var(--gold); font-weight:bold; margin:0 .25rem; }
+.eq-res { font-size:.95rem; min-width:1.2rem; padding-top:1px; }
+.eq-opts { display:flex; flex-wrap:wrap; gap:5px; padding:.3rem 1rem .75rem 3.6rem; }
+.eq-exp { margin:0 1rem .75rem 3.6rem; padding:.45rem .75rem; background:var(--bg); border-left:3px solid var(--gold); font-size:.78rem; color:var(--dim); font-style:italic; line-height:1.55; display:none; }
+.eq-exp.show { display:block; }
+.eq-tl-box { background:var(--surf); border:1px solid var(--border); border-radius:8px; padding:1rem; margin-bottom:.6rem; }
+.eq-tl-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
+.eq-tl-row:last-of-type { border-bottom:none; }
+.eq-tl-label { flex:1; font-size:.88rem; }
+.eq-tl-year { font-size:.8rem; color:var(--dim); min-width:34px; text-align:right; opacity:0; transition:opacity .3s; }
+.eq-tl-year.show { opacity:1; }
+.eq-tl-opts { display:flex; gap:3px; flex-shrink:0; }
 </style>
 </head>
 <body>
@@ -329,9 +367,10 @@ main {
   </div>
 </header>
 
-<nav id="main-nav"></nav>
+<nav id="main-nav"></nav><div id="exam-nav" style="border-bottom:1px solid var(--border);padding:.6rem 2rem;background:var(--surf2);"><button class="nav-btn" id="exam-mode-btn" onclick="enterExamMode()">📝 Vizsgázás</button></div>
 
 <main id="main-content"></main>
+<div id="exam-view"><div class="exam-picker" id="exam-picker"></div><div class="exam-active" id="exam-active"></div></div>
 
 <script>
 // ─────────────────────────────────────────────
@@ -1032,6 +1071,596 @@ function buildTimelineSection(s) {
 
   return wrap;
 }
+
+
+// ─────────────────────────────────────────────
+// EXAM DATA
+// ─────────────────────────────────────────────
+const ED = 'min-width:32px;height:30px;padding:0 7px;border-radius:6px;border:0.5px solid #c8bfae;background:#e4ddd0;color:#7a6e60;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;';
+const EDS= 'min-width:32px;height:30px;padding:0 7px;border-radius:6px;border:2px solid #2a6099;background:#2a6099;color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;';
+const EDC= 'min-width:32px;height:30px;padding:0 7px;border-radius:6px;border:2px solid #2e7d4f;background:#d4edda;color:#1a4a2e;font-size:12px;font-weight:500;cursor:default;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;';
+const EDW= 'min-width:32px;height:30px;padding:0 7px;border-radius:6px;border:2px solid #aa3333;background:#f4d4d4;color:#6a1a1a;font-size:12px;font-weight:500;cursor:default;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:line-through;opacity:.6;';
+const EDR= 'min-width:32px;height:30px;padding:0 7px;border-radius:6px;border:2px solid #6a50aa;background:#e0d8f0;color:#3a2870;font-size:12px;font-weight:500;cursor:default;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;';
+
+const IH=[{v:'IGAZ',l:'✓ IGAZ'},{v:'HAMIS',l:'✗ HAMIS'}];
+const A4=[{v:'A',l:'A'},{v:'B',l:'B'},{v:'C',l:'C'},{v:'D',l:'D'}];
+const AH=[{v:'A',l:'A – mindkét fele igaz'},{v:'B',l:'B – csak az első fele igaz'},{v:'C',l:'C – csak a második fele igaz'},{v:'D',l:'D – egyik fele sem igaz'}];
+
+const EXAMS = [
+  {
+    id:'e1', title:'2025.05.22. jt.1 "B" variáns', desc:'Magánjogi kódexek kétfelés + Náci/szovjet + Időrend + USA vs Francia 1791 + Napóleon + Weimar vs 1871 · 50 kérdés',
+    blocks:[
+      { type:'q', id:'I', title:'I. Kétfelés – magánjogi kódexek', sub:'A = mindkét fele igaz · B = csak az első fele igaz · C = csak a második fele igaz · D = egyik fele sem igaz', opts:AH, num:1, items:[
+        {q:'A francia Code civil kodifikációja során Napóleon részt vett az Államtanács ülésein <span class="sep">‖</span> de a tartalmi kérdésekben nem foglalt állást.', ans:'B', exp:'Napóleon valóban részt vett, de aktívan hozzászólt. Az első fele igaz, a második hamis.'},
+        {q:'A Német Polgári Törvénykönyv felosztásában az institúció-rendszert követi <span class="sep">‖</span> szerkezetileg öt részre (könyvre) tagolódik.', ans:'C', exp:'A BGB pandekta-rendszert követ (NEM institúciót!), de valóban 5 részre tagolódik.'},
+        {q:'A Német Polgári Törvénykönyv egységteremtő érdeme vitathatatlan <span class="sep">‖</span> a hatályba léptető rendelkezések között azonban a részállamok magánjogba vágó korábbi szabályainak jelentős részét érvényesnek tekintette.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'Az Osztrák Polgári Törvénykönyv védi a méhmagzat jogait <span class="sep">‖</span> de a rabszolgaságot és az örökös szolgaságot nem tilalmazza.', ans:'B', exp:'Az ABGB védi a méhmagzatot (igaz), de a rabszolgaságot kifejezetten tiltja (hamis).'},
+        {q:'Az Osztrák Polgári Törvénykönyv szerint a törvényt általánosan kötelező jelleggel csak a Legfelsőbb Bíróság értelmezheti <span class="sep">‖</span> de kivételesen megengedhető az analógia is.', ans:'C', exp:'A törvényt általánosan kötelezően csak a törvényhozó értelmezheti (első fele hamis). Az analógia megengedett (második fele igaz).'},
+        {q:'A Német Polgári Törvénykönyv házassági vagyonjogi szabályaiban erősen tükröződnek a germán tradíciók <span class="sep">‖</span> öröklési szabályaiban a római jog hatása érzik.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A Német Polgári Törvénykönyv 1900. január 1-jén lépett hatályba <span class="sep">‖</span> absztrakt fogalmi rendszer, tárgyszerűség és tudományos precizitás jellemzi.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'Az Osztrák Polgári Törvénykönyv szerint a házasság szerződés <span class="sep">‖</span> e szerződést pedig a feleknek – bizonyos bontóokok fennállása esetén – joguk van önhatalmúlag is megszüntetni.', ans:'B', exp:'Szerződés (igaz), de önhatalmú felbontás nem lehetséges (hamis).'},
+        {q:'Az Osztrák Polgári Törvénykönyv szerint a szokásjogot csak akkor lehet alkalmazni, ha valamely törvény hivatkozik rá <span class="sep">‖</span> a természetjog alkalmazása azonban tilos.', ans:'B', exp:'Szokásjog korlátozva megengedett (igaz). A természetjog hézagpótlóként hívható fel – NEM tilos (hamis).'},
+        {q:'Az Osztrák Polgári Törvénykönyv nem tesz különbséget a törvényes és a házasságon kívül született gyermekek között <span class="sep">‖</span> rájuk ugyanazon szabályok vonatkoznak és teljesen egyenjogúak.', ans:'D', exp:'Az ABGB igenis különbséget tesz. Mindkét fele hamis.'},
+      ]},
+      { type:'q', id:'II', title:'II. Náci vs Szovjet büntetőjog', sub:'A = csak náci · B = csak szovjet · C = mindkettő · D = egyik sem', opts:A4, num:11, items:[
+        {q:'Kifejezetten lehetővé tette a büntetőjogi analógia alkalmazását.', ans:'C', exp:'Mindkét rendszer megengedte az analógiát.'},
+        {q:'A politikai bűncselekmények tárgyában külön hatáskörrel felruházott, két hivatásos bíróból és három laikus tagból álló néptörvényszék ítélkezett.', ans:'A', exp:'A náci Volksgerichtshof: 2 hivatásos bíró + 3 laikus (1934).'},
+        {q:'Politikai bűncselekményt elkövetők esetén a büntetés kiszabásánál általában törekedtek a humánus megoldásokra.', ans:'D', exp:'Egyik rendszerben sem volt jellemző a humanizmus.'},
+        {q:'Szigorúan érvényre juttatta a nullum crimen sine lege elvét.', ans:'D', exp:'Mindkét rendszer megsértette ezt az elvet.'},
+        {q:'A politikai tisztogatások során elítélt és kivégzett foglyok feleségei számára külön büntetés-végrehajtási táborokat tartottak fenn.', ans:'B', exp:'ČSIR-táborok – kizárólag szovjet.'},
+        {q:'Kiemelt szerep jutott a társadalomra veszélyesség fogalmának.', ans:'C', exp:'Mindkét rendszerben kulcsfogalom volt.'},
+        {q:'A fiatalkorú elkövetőkkel szembeni halál- és fegyházbüntetés lehetővé tétele érdekében jogszabályba foglalták a "koraérett fiatalkorú bűnöző" fogalmát.', ans:'A', exp:'Kizárólag náci megoldás.'},
+        {q:'Az ítélkezésnél nagy jelentőséget tulajdonítottak "az egészséges népi igazságérzetnek".', ans:'A', exp:'Gesundes Volksempfinden – tipikusan náci fogalom.'},
+        {q:'Külön büntetés-végrehajtási intézményeket tartottak fenn a nyomorékok számára.', ans:'D', exp:'Ilyen intézmény egyik rendszerben sem létezett.'},
+        {q:'Nagy számban rendeztek kirakatpereket, koncepciós pereket.', ans:'C', exp:'Mindkét rendszerre jellemző volt.'},
+      ]},
+      { type:'tl', id:'III', title:'III. Időrend – állítsa növekvő sorrendbe!', sub:'A = legkorábbi · E = legkésőbbi', num:21,
+        groups:[{ items:[
+          {label:'Podjebrád György európai föderációs terve', year:1462, letter:'A'},
+          {label:'Az első amerikai szövetségi Bírósági Törvény elfogadása', year:1789, letter:'B'},
+          {label:'Marbury v. Madison ítélet', year:1803, letter:'C'},
+          {label:'Az ún. pillersdorfi alkotmány létrejötte', year:1848, letter:'D'},
+          {label:'Az olasz Codice Zanardelli hatályba lépése', year:1890, letter:'E'},
+        ]}]
+      },
+      { type:'q', id:'IV', title:'IV. USA 1787 vs Francia 1791', sub:'A = csak USA · B = csak Francia 1791 · C = mindkettő · D = egyik sem', opts:A4, num:26, items:[
+        {q:'Soha nem lépett hatályba.', ans:'D', exp:'Mindkettő hatályba lépett.'},
+        {q:'A törvényhozó hatalom által elfogadott törvények hatályba lépését a választópolgárok által kezdeményezett népszavazás meghiúsíthatta.', ans:'D', exp:'Egyik sem tartalmazott ilyen népi vétójogot.'},
+        {q:'A törvényhozó hatalom választásakor a választópolgárok elektorokat választottak, akik a megyei elektori gyűléseken szavazták meg a törvényhozó hatalom tagjait.', ans:'B', exp:'A francia 1791-es közvetett választási rendszere.'},
+        {q:'Az alapvető jogok szabályozását csak későbbi kiegészítéssel csatolták hozzá.', ans:'A', exp:'Az USA Bill of Rights 1791-ben kiegészítésként csatolódott.'},
+        {q:'A "fékek és ellensúlyok" elvét valósította meg.', ans:'A', exp:'Ez elsősorban az USA alkotmányának alappillére.'},
+        {q:'Az államfő alá van vetve a törvénynek és az alkotmánynak.', ans:'C', exp:'Mindkettőben az államfő köteles az alkotmányra esküdni.'},
+        {q:'Államszövetségi (konföderatív) berendezkedést hozott létre.', ans:'D', exp:'Az USA föderáció. A Francia 1791-es unitárius állam.'},
+        {q:'Az államfőt elektorok útján választják.', ans:'A', exp:'Az USA elnökét az elektori kollégium választja.'},
+        {q:'Monarchikus államformát rögzített.', ans:'B', exp:'A Francia 1791-es alkotmányos királyságot rögzít.'},
+        {q:'A törvényhozó hatalom egykamarás.', ans:'B', exp:'A francia 1791-es Törvényhozó Nemzetgyűlés egykamarás.'},
+      ]},
+      { type:'q', id:'V', title:'V. Napóleon büntető törvénykönyvei – igaz / hamis', sub:'', opts:IH, num:36, items:[
+        {q:'Napóleon büntető eljárási törvénykönyve szerint semmisségi panasznak új bizonyíték vagy ellentétes ítélet előkerülése esetén, vagy akkor volt helye, ha kiderült: a tanúk hamis tanúvallomást tettek.', ans:'HAMIS', exp:'A semmisségi panasznak törvénysértés esetén volt helye.'},
+        {q:'Napóleon büntető eljárási törvénykönyve szerint perújításnak súlyos anyagi vagy eljárási jogszabálysértés esetén volt helye az ítélettel szemben.', ans:'HAMIS', exp:'Speciális törvényi feltételek alapján volt lehetséges.'},
+        {q:'Napóleon büntető törvénykönyve a humanizmus jegyében kiiktatta a büntetések közül a deportálás intézményét.', ans:'HAMIS', exp:'A Code pénal megtartotta a deportálást (csak 1832-ben törölték el).'},
+        {q:'Napóleon büntető törvénykönyvében szerepel az izzó vassal való megbélyegzés előírása bizonyos bűncselekmények esetére.', ans:'IGAZ', exp:'A Code pénal tartalmazta – csak 1832-ben törölték el.'},
+        {q:'Napóleon büntető törvénykönyve súlyosságuk szerint három fajtára osztotta a bűncselekményeket: bűntett, vétség, szabálysértés.', ans:'IGAZ', exp:'A trichotómia (crime – délit – contravention) a Code pénal alappillére.'},
+      ]},
+      { type:'q', id:'VI', title:'VI. Weimari Köztársaság 1919 vs Német Birodalom 1871', sub:'A = csak 1871 · B = csak Weimar · C = mindkettő · D = egyik sem', opts:A4, num:41, items:[
+        {q:'A kis pártok akár egyetlen mandátummal is képviseltethették magukat, ez a parlamenti erők szétforgácsolódásához vezetett.', ans:'B', exp:'A Weimari arányos választási rendszer küszöb nélkül sok kis pártot juttatott be.'},
+        {q:'Hatálya alatt országos népszavazást is tartottak.', ans:'B', exp:'A Weimari alkotmány bevezette a népi kezdeményezést és népszavazást.'},
+        {q:'A nők számára is szavazati jogot biztosított.', ans:'B', exp:'A Weimari alkotmány (1919) vezette be a nők választójogát.'},
+        {q:'Államszövetséggé (konföderációvá) alakította Németországot.', ans:'D', exp:'Mindkettő szövetségi állam (föderáció).'},
+        {q:'Az államfőt a nép közvetlenül választotta.', ans:'B', exp:'A Weimari köztársasági elnököt 7 évre közvetlenül választja a nép.'},
+        {q:'A szabadságjogok igen részletes katalógusát tartalmazta.', ans:'B', exp:'A Weimari alkotmány kiterjedt alapjogi katalógust tartalmaz.'},
+        {q:'Poroszország túlsúlyát érvényesítette a törvényhozásban és a végrehajtó hatalomban.', ans:'A', exp:'Az 1871-es alkotmány felülreprezentálta Poroszországot.'},
+        {q:'Össznémet állam tagállamokból állt.', ans:'C', exp:'Mindkettő szövetségi állam tagállamokból.'},
+        {q:'Az államfő a birodalom közbiztonságának nagymértékű megzavarása esetén fegyveres erőt vehetett igénybe; szükségrendelet-alkotási joga is volt.', ans:'B', exp:'A Weimari alkotmány 48. cikkelye.'},
+        {q:'Tartalmilag lényegében azonos volt az Észak-német Szövetség alaptörvényével.', ans:'A', exp:'Az 1871-es birodalmi alkotmány az 1867-es Észak-Német Szövetség alkotmányából ered.'},
+      ]},
+    ]
+  },
+  {
+    id:'e2', title:'2025.06.05. jt.2 "A" variáns', desc:'Gestapo/Livingston igaz/hamis + Francia 1791 vs 1793 + Sully vs Saint-Pierre · 25 kérdés',
+    blocks:[
+      { type:'q', id:'I', title:'I. Igaz / Hamis – náci diktatúra, Livingston-kódex', sub:'', opts:IH, num:1, items:[
+        {q:'A nemzetiszocialista német diktatúrában külön néptörvényszékeket hoztak létre a politikai bűncselekmények megbüntetésére.', ans:'IGAZ', exp:'A Volksgerichtshof 1934-ben jött létre politikai ügyekre.'},
+        {q:'A német nemzetiszocialista diktatúra idején a nácik törvényben tiltották meg a német fiatalkorúak elleni büntetőeljárást.', ans:'HAMIS', exp:'Épp ellenkezőleg: a "koraérett fiatalkorú bűnöző" fogalmával lehetővé tették a halálbüntetést fiatalkorúakra.'},
+        {q:'A náci Német Birodalomban törvény rögzítette, hogy a titkos államrendőrség (Gestapo) elfogatóparancsai ellen nincs helye jogorvoslatnak.', ans:'IGAZ', exp:'Az 1936-os törvény kizárta a jogorvoslatot.'},
+        {q:'A lousianai ún. Livingston-kódex volt az első átfogó büntetőjogi kodifikációs kísérlet az angolszász jogrendszerben.', ans:'IGAZ', exp:'Livingston 1826-os tervezete az angolszász világ első átfogó büntetőjogi kodifikációja.'},
+        {q:'A lousianai ún. Livingston-kódex haladó szelleme ellenére nem vállalta föl a halálbüntetés eltörlését.', ans:'HAMIS', exp:'A Livingston-kódex eltörölte a halálbüntetést.'},
+      ]},
+      { type:'q', id:'II', title:'II. Francia alkotmányok: 1791 vs 1793', sub:'A = csak 1791 · B = csak 1793 · C = mindkettő · D = egyik sem', opts:A4, num:6, items:[
+        {q:'Konföderatív államberendezkedést hoz létre.', ans:'D', exp:'Egyik sem – mindkettő unitárius állam.'},
+        {q:'Az államfő rendelkezései miniszteri ellenjegyzéshez kötöttek.', ans:'A', exp:'Az 1791-esnél: a király minden aktusához miniszteri ellenjegyzés kell.'},
+        {q:'A választási rendszert úgy szabályozták, hogy biztosítsa a vagyoni előkelők hatalmát.', ans:'A', exp:'Az 1791-es cenzusos. Az 1793-as általános férfi választójogot vezet be.'},
+        {q:'Az államfő népszavazással leváltható.', ans:'D', exp:'Egyik alkotmányban sincs ilyen intézmény.'},
+        {q:'Tisztán népképviseleti alapon állt.', ans:'B', exp:'Az 1793-as jakobinus alkotmány jellemzője.'},
+        {q:'Köztársasági államformát vezet be.', ans:'B', exp:'Az 1791-es alkotmányos királyság. Az 1793-as vezet be köztársaságot.'},
+        {q:'Hiányzik belőle az alkotmánybiztosítékok rendszere.', ans:'C', exp:'Mindkettőből hiányoznak.'},
+        {q:'Hatályba lépése elmaradt.', ans:'B', exp:'Az 1793-as soha nem lépett hatályba.'},
+        {q:'Intézményesíti az alkotmánybíróságot.', ans:'D', exp:'Egyik sem tartalmaz alkotmánybíróságot.'},
+        {q:'Nincsenek benne kisebbségvédelmi szabályok.', ans:'C', exp:'Mindkettőből hiányoznak.'},
+      ]},
+      { type:'q', id:'III', title:'III. Sully vs Saint-Pierre', sub:'A = csak Sully · B = csak Saint-Pierre · C = mindkettő · D = egyik sem', opts:A4, num:16, items:[
+        {q:'Egy politikai akadémia felállítását követeli, amelyen Franciaország 40 legjelentősebb politikusa tanítana.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Az első olyan felfogás, amely az államok közötti hatalmi egyensúly kialakításának szükségességét hangsúlyozta és annak intézményes biztosítására törekedett.', ans:'A', exp:'Sully Nagy Terve (kb. 1638) az első ilyen kezdeményezés.'},
+        {q:'A szövetség valójában egy föderatív államberendezkedés.', ans:'B', exp:'Saint-Pierre tervének jellemzője.'},
+        {q:'A római katolikus, református és lutheránus egyházak egyenjogúsítandók.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Javasolja az adóbevallás és az adótarifa-rendszer bevezetését.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Egy európai államszövetséget javasol.', ans:'C', exp:'Mindkét terv ezt javasolja.'},
+        {q:'Európát 15, nagyjából egyenlő terjedelmű államra kell felosztani.', ans:'A', exp:'Sully tervének jellemző eleme.'},
+        {q:'A szervezet működtetésére a terv két változatot is tartalmazott, mindkettőben egy közös döntéshozó tanács mellett regionális tanácsok is szervezendők.', ans:'A', exp:'Sully tervének két verziója van.'},
+        {q:'A kereskedelmi törvényeknek minden, a szövetséghez tartozó országban azonosnak kell lenniük.', ans:'B', exp:'Saint-Pierre tervének kulcseleme.'},
+        {q:'Az államok vezetői a francia király által összehívott és vezetett kongresszuson egyeztetnék nézetkülönbségeiket.', ans:'A', exp:'Sully tervében a francia király vezető szerepet tölt be.'},
+      ]},
+    ]
+  },
+  {
+    id:'e3', title:'2025.06.05. jt.2 "B" variáns', desc:'EJENY/PPJNE/EEJE kétfelés + Időrend + Gestapo/Livingston igaz/hamis · 20 kérdés',
+    blocks:[
+      { type:'q', id:'I', title:'I. Kétfelés – emberi jogi dokumentumok', sub:'A = mindkét fele igaz · B = csak az első fele igaz · C = csak a második fele igaz · D = egyik fele sem igaz', opts:AH, num:1, items:[
+        {q:'Az Európai Emberi Jogi Bíróság bíráit az Európai Tanács választja <span class="sep">‖</span> jelöltek az Európai Bíróság volt bírái lehetnek.', ans:'D', exp:'Az Európa Tanács Parlamenti Közgyűlése választja. Jelöltek a tagállamok jelöltjei – nem az Európai Bíróság volt bírái.'},
+        {q:'Az Emberi Jogok Egyetemes Nyilatkozata szerint mind a férfinak, mind a nőnek joga van házasságot kötni a házasságra érett kor elérésétől <span class="sep">‖</span> a Nyilatkozat szerint a férfinak és a nőnek egyenlő jogai vannak a házasság felbontása tekintetében.', ans:'A', exp:'Mindkét fele igaz. EJENY 16. cikk.'},
+        {q:'Az Emberi Jogok Európai Egyezménye alapján működő Európai Emberi Jogi Bíróság ítéleteinek hatalmas jelentősége van <span class="sep">‖</span> az egyes tagállamok alkotmánybíróságai is támaszkodhatnak rájuk.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya szerint férfiak és nők egyenjogúak <span class="sep">‖</span> ennek értelmében a politikai és gazdasági tisztségek betöltésekor megfelelő kvótát kell alkalmazni a nők arányának biztosítására.', ans:'B', exp:'Nemek egyenlősége: igen. Kötelező kvóta ebből nem következik.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmányát a Kereskedelmi Világszervezet fogadta el 1966-ban <span class="sep">‖</span> Első Fakultatív Jegyzőkönyve alapján lehetőség van egyéni panaszokat benyújtani az ENSZ Emberi Jogi Bizottságához.', ans:'C', exp:'Az első fele hamis (ENSZ Közgyűlése fogadta el). A második fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya szerint mindenkinek joga van a vallás szabadságára <span class="sep">‖</span> nem vonatkozik azonban a vallásszabadság az erőszakos vallási közösségekre.', ans:'B', exp:'Vallásszabadság garantált. A korlátozás alapja közrend/közerkölcs – nem csak erőszakos közösségek.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya előírja, hogy törvényben tiltsák meg a háborús propagandát <span class="sep">‖</span> meg kell tiltani továbbá a faji, vallási gyűlölet bármilyen hirdetését.', ans:'A', exp:'Mindkét fele igaz. PPJNE 20. cikk.'},
+        {q:'Az Emberi Jogok Európai Egyezménye alapján eredetileg az Emberi Jogok Európai Bizottsága és az Emberi Jogok Európai Bírósága felelt az egyezmény végrehajtásáért <span class="sep">‖</span> később azonban a korábbi két intézmény helyére egy új Bíróságot hoztak létre.', ans:'A', exp:'Mindkét fele igaz. 1998-tól egységes EJEB.'},
+        {q:'Az Emberi Jogok Egyetemes Nyilatkozatát az ENSZ Közgyűlése fogadta el 1948-ban <span class="sep">‖</span> a Nyilatkozatot erőteljesen és egyoldalúan a nyugati fejlett államok szemlélete hatja át.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya tartalmazza a diszkrimináció tilalmát <span class="sep">‖</span> tartalmazza továbbá az abortuszhoz való jogot.', ans:'B', exp:'Diszkrimináció tilalom: igen. Abortuszhoz való jog: nincs benne.'},
+      ]},
+      { type:'tl', id:'II', title:'II. Időrend', sub:'A = legkorábbi · E = legkésőbbi', num:11,
+        groups:[{ items:[
+          {label:'Pierre Dubois: De recuperatione Terre Sancte', year:1306, letter:'A'},
+          {label:'Amerikai Függetlenségi Nyilatkozat', year:1776, letter:'B'},
+          {label:'Az Emberi és Polgár Jogainak Nyilatkozata', year:1789, letter:'C'},
+          {label:'A napóleoni Code pénal kihirdetése', year:1810, letter:'D'},
+          {label:'A Szárd Királyság alkotmánya', year:1848, letter:'E'},
+        ]}]
+      },
+      { type:'q', id:'III', title:'III. Igaz / Hamis – náci diktatúra, Livingston-kódex', sub:'', opts:IH, num:16, items:[
+        {q:'A náci Német Birodalomban törvény rögzítette, hogy a titkos államrendőrség (Gestapo) elfogatóparancsai ellen nincs helye jogorvoslatnak.', ans:'IGAZ', exp:'Az 1936-os törvény kizárta a jogorvoslatot.'},
+        {q:'A lousianai ún. Livingston-kódex volt az első átfogó büntetőjogi kodifikációs kísérlet az angolszász jogrendszerben.', ans:'IGAZ', exp:'Livingston 1826-os tervezete az angolszász világ első átfogó büntetőjogi kodifikációja.'},
+        {q:'A lousianai ún. Livingston-kódex haladó szelleme ellenére nem vállalta föl a halálbüntetés eltörlését.', ans:'HAMIS', exp:'A Livingston-kódex eltörölte a halálbüntetést.'},
+        {q:'A német nemzetiszocialista diktatúra idején a nácik törvényben tiltották meg a német fiatalkorúak elleni büntetőeljárást.', ans:'HAMIS', exp:'Épp ellenkezőleg: lehetővé tették a halálbüntetést fiatalkorúakra.'},
+        {q:'A nemzetiszocialista német diktatúrában külön néptörvényszékeket hoztak létre a politikai bűncselekmények megbüntetésére.', ans:'IGAZ', exp:'A Volksgerichtshof 1934-ben jött létre.'},
+      ]},
+    ]
+  },
+  {
+    id:'e4', title:'2026.05.21. jt.2 "A" variáns', desc:'Gestapo/Livingston + Francia 1791 vs 1793 + Sully + Code civil vs ABGB + EJENY/PPJNE + Időrend · 50 kérdés',
+    blocks:[
+      { type:'q', id:'I', title:'I. Igaz / Hamis – náci diktatúra, Livingston-kódex', sub:'', opts:IH, num:1, items:[
+        {q:'A nemzetiszocialista német diktatúrában külön néptörvényszékeket hoztak létre a politikai bűncselekmények megbüntetésére.', ans:'IGAZ', exp:'A Volksgerichtshof 1934-ben jött létre.'},
+        {q:'A német nemzetiszocialista diktatúra idején a nácik törvényben tiltották meg a német fiatalkorúak elleni büntetőeljárást.', ans:'HAMIS', exp:'Épp ellenkezőleg: lehetővé tették a halálbüntetést fiatalkorúakra.'},
+        {q:'A náci Német Birodalomban törvény rögzítette, hogy a titkos államrendőrség (Gestapo) elfogatóparancsai ellen nincs helye jogorvoslatnak.', ans:'IGAZ', exp:'Az 1936-os törvény kizárta a jogorvoslatot.'},
+        {q:'A lousianai ún. Livingston-kódex volt az első átfogó büntetőjogi kodifikációs kísérlet az angolszász jogrendszerben.', ans:'IGAZ', exp:'Livingston 1826-os tervezete az angolszász világ első átfogó büntetőjogi kodifikációja.'},
+        {q:'A lousianai ún. Livingston-kódex haladó szelleme ellenére nem vállalta föl a halálbüntetés eltörlését.', ans:'HAMIS', exp:'A Livingston-kódex eltörölte a halálbüntetést.'},
+      ]},
+      { type:'q', id:'II', title:'II. Francia alkotmányok: 1791 vs 1793', sub:'A = csak 1791 · B = csak 1793 · C = mindkettő · D = egyik sem', opts:A4, num:6, items:[
+        {q:'Konföderatív államberendezkedést hoz létre.', ans:'D', exp:'Egyik sem.'},
+        {q:'Az államfő rendelkezései miniszteri ellenjegyzéshez kötöttek.', ans:'A', exp:'Csak az 1791-esnél.'},
+        {q:'A választási rendszert úgy szabályozták, hogy biztosítsa a vagyoni előkelők hatalmát.', ans:'A', exp:'Az 1791-es cenzusos.'},
+        {q:'Az államfő népszavazással leváltható.', ans:'D', exp:'Egyik alkotmányban sincs ilyen.'},
+        {q:'Tisztán népképviseleti alapon állt.', ans:'B', exp:'Az 1793-as jellemzője.'},
+        {q:'Köztársasági államformát vezet be.', ans:'B', exp:'Az 1793-as vezet be köztársaságot.'},
+        {q:'Hiányzik belőle az alkotmánybiztosítékok rendszere.', ans:'C', exp:'Mindkettőből hiányoznak.'},
+        {q:'Hatályba lépése elmaradt.', ans:'B', exp:'Az 1793-as soha nem lépett hatályba.'},
+        {q:'Intézményesíti az alkotmánybíróságot.', ans:'D', exp:'Egyik sem tartalmaz alkotmánybíróságot.'},
+        {q:'Nincsenek benne kisebbségvédelmi szabályok.', ans:'C', exp:'Mindkettőből hiányoznak.'},
+      ]},
+      { type:'q', id:'III', title:'III. Sully vs Saint-Pierre', sub:'A = csak Sully · B = csak Saint-Pierre · C = mindkettő · D = egyik sem', opts:A4, num:16, items:[
+        {q:'Egy politikai akadémia felállítását követeli, amelyen Franciaország 40 legjelentősebb politikusa tanítana.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Az első olyan felfogás, amely az államok közötti hatalmi egyensúly kialakításának szükségességét hangsúlyozta.', ans:'A', exp:'Sully Nagy Terve (kb. 1638) az első ilyen.'},
+        {q:'A szövetség valójában egy föderatív államberendezkedés.', ans:'B', exp:'Saint-Pierre jellemzője.'},
+        {q:'A római katolikus, református és lutheránus egyházak egyenjogúsítandók.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Javasolja az adóbevallás és az adótarifa-rendszer bevezetését.', ans:'D', exp:'Egyik tervben sem szerepel.'},
+        {q:'Egy európai államszövetséget javasol.', ans:'C', exp:'Mindkettő ezt javasolja.'},
+        {q:'Európát 15, nagyjából egyenlő terjedelmű államra kell felosztani.', ans:'A', exp:'Sully tervének jellemző eleme.'},
+        {q:'A szervezet működtetésére a terv két változatot is tartalmazott, mindkettőben egy közös döntéshozó tanács mellett regionális tanácsok is szervezendők.', ans:'A', exp:'Sully tervének két verziója van.'},
+        {q:'A kereskedelmi törvényeknek minden tagállamban azonosnak kell lenniük.', ans:'B', exp:'Saint-Pierre kulcseleme.'},
+        {q:'Az államok vezetői a francia király által összehívott kongresszuson egyeztetnék nézetkülönbségeiket.', ans:'A', exp:'Sully tervében a francia király vezető szerepet tölt be.'},
+      ]},
+      { type:'q', id:'IV', title:'IV. Code civil vs ABGB', sub:'A = csak Code civil · B = csak ABGB · C = mindkettő · D = egyik sem', opts:A4, num:26, items:[
+        {q:'A kodifikációt tárgyaló tanácsban maga az államfő elnökölt.', ans:'A', exp:'Napóleon személyesen vezette az Államtanács üléseit.'},
+        {q:'Az ún. institúció-rendszert követte.', ans:'C', exp:'Mindkét kódex institúció-rendszerű.'},
+        {q:'Önálló fejezetet szentel a hűbéri kötöttségekből eredő tulajdoni korlátozásoknak.', ans:'B', exp:'Az ABGB megtartotta a hitbizományt. A Code civil eltörölte.'},
+        {q:'A törvény általánosan kötelező jelleggel csak a törvényhozó értelmezheti, de kivételesen megengedhető az analógia is.', ans:'B', exp:'Az ABGB 7-8. §-ának tartalma.'},
+        {q:'Kötelmek szerződésből, mintegy-szerződésből, károkozásból és mintegy-károkozásból fakadhatnak.', ans:'C', exp:'A quadripartita kötelmi felosztás mindkettőben megjelenik.'},
+        {q:'A pandektajogi hagyományt követi.', ans:'D', exp:'Sem a Code civil, sem az ABGB nem pandektajogi – mindkettő institúció-rendszerű.'},
+        {q:'Túlságosan kazuisztikus.', ans:'D', exp:'Egyik sem kazuisztikus.'},
+        {q:'Tiszteletben tartja az egyes személyeknek vagy testületeknek adott kiváltságokat és mentességeket.', ans:'B', exp:'Az ABGB megőriz rendi kiváltságokat. A Code civil eltörölte ezeket.'},
+        {q:'1900-ban lépett hatályba.', ans:'D', exp:'1900-ban a BGB lépett hatályba! Code civil: 1804, ABGB: 1812.'},
+        {q:'Felelősségi rendszere eredetileg a vétkességen alapult, de később lehetővé vált az objektív felelősség elvének kibontása is.', ans:'A', exp:'A Code civil 1382. cikkéből bontotta ki a bírói gyakorlat az objektív felelősséget.'},
+      ]},
+      { type:'q', id:'V', title:'V. Kétfelés – emberi jogi dokumentumok', sub:'A = mindkét fele igaz · B = csak az első fele igaz · C = csak a második fele igaz · D = egyik fele sem igaz', opts:AH, num:36, items:[
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmányát a Kereskedelmi Világszervezet fogadta el 1966-ban <span class="sep">‖</span> Első Fakultatív Jegyzőkönyve alapján lehetőség van egyéni panaszokat benyújtani az ENSZ Emberi Jogi Bizottságához.', ans:'C', exp:'Az első fele hamis (ENSZ Közgyűlése). A második fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya szerint mindenkinek joga van a vallás szabadságára <span class="sep">‖</span> nem vonatkozik azonban a vallásszabadság az erőszakos vallási közösségekre.', ans:'B', exp:'Vallásszabadság garantált. A korlátozás alapja közrend/közerkölcs – nem csak erőszakos közösségek.'},
+        {q:'Az Emberi Jogok Európai Egyezménye alapján eredetileg az Emberi Jogok Európai Bizottsága és az Emberi Jogok Európai Bírósága felelt az egyezmény végrehajtásáért <span class="sep">‖</span> később azonban a korábbi két intézmény helyére egy új Bíróságot hoztak létre.', ans:'A', exp:'Mindkét fele igaz. 1998-tól egységes EJEB.'},
+        {q:'Az Emberi Jogok Egyetemes Nyilatkozatát az ENSZ Közgyűlése fogadta el 1948-ban <span class="sep">‖</span> a Nyilatkozatot erőteljesen és egyoldalúan a nyugati fejlett államok szemlélete hatja át.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya tartalmazza a diszkrimináció tilalmát <span class="sep">‖</span> tartalmazza továbbá az abortuszhoz való jogot.', ans:'B', exp:'Diszkrimináció tilalom: igen. Abortuszhoz való jog: nincs benne.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya szerint férfiak és nők egyenjogúak <span class="sep">‖</span> ennek értelmében a politikai és gazdasági tisztségek betöltésekor megfelelő kvótát kell alkalmazni a nők arányának biztosítására.', ans:'B', exp:'Nemek egyenlősége: igen. Kötelező kvóta ebből nem következik.'},
+        {q:'Az Emberi Jogok Európai Egyezménye alapján működő Európai Emberi Jogi Bíróság ítéleteinek hatalmas jelentősége van <span class="sep">‖</span> az egyes tagállamok alkotmánybíróságai is támaszkodhatnak rájuk.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A Polgári és Politikai Jogok Nemzetközi Egyezségokmánya előírja, hogy törvényben tiltsák meg a háborús propagandát <span class="sep">‖</span> meg kell tiltani továbbá a faji, vallási gyűlölet bármilyen hirdetését.', ans:'A', exp:'Mindkét fele igaz. PPJNE 20. cikk.'},
+        {q:'Az Európai Emberi Jogi Bíróság bíráit az Európai Tanács választja <span class="sep">‖</span> jelöltek az Európai Bíróság volt bírái lehetnek.', ans:'D', exp:'Az Európa Tanács Parlamenti Közgyűlése választja. Jelöltek a tagállamok jelöltjei.'},
+        {q:'Az Emberi Jogok Egyetemes Nyilatkozata szerint mind a férfinak, mind a nőnek joga van házasságot kötni a házasságra érett kor elérésétől <span class="sep">‖</span> a Nyilatkozat szerint a férfinak és a nőnek egyenlő jogai vannak a házasság felbontása tekintetében.', ans:'A', exp:'Mindkét fele igaz. EJENY 16. cikk.'},
+      ]},
+      { type:'tl', id:'VI', title:'VI. Időrend', sub:'A = legkorábbi · E = legkésőbbi', num:46,
+        groups:[{ items:[
+          {label:'Pierre Dubois: De recuperatione Terre Sancte', year:1306, letter:'A'},
+          {label:'Amerikai Függetlenségi Nyilatkozat', year:1776, letter:'B'},
+          {label:'Az Ember és Polgár Jogainak Nyilatkozata', year:1789, letter:'C'},
+          {label:'A napóleoni Code pénal kihirdetése', year:1810, letter:'D'},
+          {label:'A Szárd Királyság alkotmánya', year:1848, letter:'E'},
+        ]}]
+      },
+    ]
+  },
+  {
+    id:'e5', title:'2026.06.17. (legújabb feladatlap)', desc:'Kereskedelmi jog + Náci/szovjet + USA vs Szárd + Időrend + 1799-es alkotmány + Code civil vs BGB · 50 kérdés',
+    blocks:[
+      { type:'q', id:'I', title:'I. Igaz / Hamis – kereskedelmi jog', sub:'', opts:IH, num:1, items:[
+        {q:'A Code Savary a bányajog francia királyi rendelet útján való összefoglalása volt.', ans:'HAMIS', exp:'A Code Savary (1673) kereskedelmi rendelet volt, nem bányajogi.'},
+        {q:'A Code de commerce (1807) négy társasági formát ismert.', ans:'IGAZ', exp:'Közkereseti, betéti, részvény, betéti részvénytársaság.'},
+        {q:'A francia Code Civil felölelte a magánjog teljes anyagát.', ans:'HAMIS', exp:'A kereskedelmi jogot a Code de commerce (1807) szabályozta külön.'},
+        {q:'A csődjog egyik fő feladata, hogy csőd esetén biztosítsa a megmaradt vagyont, meghatározza a csődgondnok feladatát és ha a vagyon nem elegendő az összes tartozás megfizetésére, akkor szabályokat adjon a vagyon hitelezők közti felosztására.', ans:'IGAZ', exp:'Ez pontosan a csődjog klasszikus funkciója.'},
+        {q:'A Code de commerce (1807) nem tartalmazott szabályokat a részvénytársaságra nézve.', ans:'HAMIS', exp:'Tartalmazott részvénytársasági szabályokat.'},
+      ]},
+      { type:'q', id:'II', title:'II. Náci vs Szovjet büntetőjog', sub:'A = csak náci · B = csak szovjet · C = mindkettő · D = egyik sem', opts:A4, num:6, items:[
+        {q:'Kiemelt szerepe volt a politikai bűncselekményeknek.', ans:'C', exp:'Mindkét rendszerben kulcsfogalom.'},
+        {q:'Ha a cselekmény a társadalomra veszélyes volt, de konkrét törvényi tényállást nem valósított meg, lehetőség volt analógia útján más, hasonló bűncselekményre előírt büntetést kiszabni.', ans:'C', exp:'Az analógia mindkét rendszerben megengedett volt.'},
+        {q:'A büntetőeljárási törvény módosítása elvetette a közvádhoz kötöttséget és a terhelt hátrányára szolgáló jogorvoslati intézkedések tilalmát.', ans:'A', exp:'Náci büntetőeljárási jog sajátossága.'},
+        {q:'A büntetés kiszabásához nem kellett bizonyítani azt, hogy a vádlott a bűncselekményt elkövette, a büntetéshez elég volt a tett maximális valószínűsíthetősége.', ans:'A', exp:'Tipikusan náci megoldás.'},
+        {q:'A rendszer ellenségeit gyakran különböző táborokba küldték.', ans:'C', exp:'Mindkét rendszerben alkalmaztak táborokat.'},
+        {q:'A politikai riválisok megsemmisítésére nyilvánosan megrendezett koncepciós perekben került sor, amelyek a legfelsőbb pártvezetés tagjait, a fegyveres erők vezérkarát, valamint a gazdaság és kultúra vezetőit is elérték.', ans:'B', exp:'Szovjet Moszkva-perek (1936–38).'},
+        {q:'A büntetőeljárásban extra garanciák védték a terhelt alapvető jogait.', ans:'D', exp:'Egyik rendszerben sem volt ilyen.'},
+        {q:'A büntető törvénykönyv tartalmazta ugyan a halálbüntetést, de azt központi utasításra évekig nem alkalmazták.', ans:'B', exp:'Szovjet rendszerre jellemző.'},
+        {q:'Politikai bűnperekben választott védő csak a bíróság elnökének hozzájárulásával láthatott el védelmet.', ans:'A', exp:'Náci büntetőeljárás jellemzője.'},
+        {q:'Politikai bűnperekben ötös tanácsban eljáró néptörvényszékek hoztak ítéletet.', ans:'D', exp:'Náci: 2 bíró + 3 laikus; szovjet: trojkák (3 fős).'},
+      ]},
+      { type:'q', id:'III', title:'III. USA 1787 vs Szárd Királyság 1848', sub:'A = csak USA · B = csak Szárd · C = mindkettő · D = egyik sem', opts:A4, num:16, items:[
+        {q:'Parlamentje kétkamarás.', ans:'C', exp:'Mindkettő kétkamarás.'},
+        {q:'A katolikus vallás államvallás.', ans:'B', exp:'A Szárd alkotmány kimondta a katolikus vallás mint egyedüli államvallás státuszát.'},
+        {q:'Megjelennek benne az alapvető jogok, de szűkre szabottan és komoly garanciák nélkül.', ans:'B', exp:'A Szárd alkotmány tartalmaz alapjogokat, de garanciák nélkül.'},
+        {q:'Szokásjog útján alakult ki, hogy a Képviselőház megvonhatja a bizalmat a minisztertanácstól.', ans:'B', exp:'A Szárd alkotmány szokásjogi parlamentarizmus útján fejlődött.'},
+        {q:'Népszavazás erősítette meg.', ans:'D', exp:'Egyik alkotmánynál sem volt megerősítő népszavazás.'},
+        {q:'Oktrojált alkotmány.', ans:'B', exp:'Károly Albert király oktrojálta 1848-ban.'},
+        {q:'Egyszerű törvénnyel, egyszerű többséggel módosítható volt.', ans:'B', exp:'A Szárd alkotmány rugalmas.'},
+        {q:'Konföderációt hozott létre.', ans:'D', exp:'Az USA föderáció. A Szárd Királyság unitárius állam.'},
+        {q:'A törvényhozó hatalom megbízatásánál megjelenik a rotációs elv.', ans:'A', exp:'Az USA Szenátusában a tagok 1/3-a kétévente cserélődik.'},
+        {q:'Kartális alkotmány.', ans:'A', exp:'Az USA alkotmánya a kartális alkotmány klasszikus példája.'},
+      ]},
+      { type:'tl', id:'VI', title:'VI. Időrend', sub:'A = legkorábbi · E = legkésőbbi', num:35,
+        groups:[{ items:[
+          {label:'Az Emberi és Polgár Jogainak Nyilatkozata', year:1789, letter:'A'},
+          {label:'Marbury v. Madison ítélet', year:1803, letter:'B'},
+          {label:'A napóleoni Code pénal kihirdetése', year:1810, letter:'C'},
+          {label:'A rabszolgaságot eltörlő 13. alkotmánykiegészítés ratifikálása (USA)', year:1865, letter:'D'},
+          {label:'A Weimari Alkotmány hatálybalépése', year:1919, letter:'E'},
+        ]}]
+      },
+      { type:'q', id:'V', title:'V. Kétfelés – 1799-es francia alkotmány (Konzulátus)', sub:'A = mindkét fele igaz · B = csak az első fele igaz · C = csak a második fele igaz · D = egyik fele sem igaz', opts:AH, num:26, items:[
+        {q:'A Tribunátus tagjait a választópolgárok által többszörösen közvetett választási rendszer útján létrejövő nemzeti listáról a Szenátus választotta meg <span class="sep">‖</span> a Tribunátus száz tagból állt és évente ötödrészben megújult.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'A végrehajtó hatalom feje a király volt <span class="sep">‖</span> a konzulok személyét az alkotmány név szerint meghatározta.', ans:'C', exp:'Az első fele hamis (Napóleon = Első Konzul). A második fele igaz.'},
+        {q:'Az 1799. évi francia alkotmány nem tartalmazta az emberi jogok nyilatkozatát <span class="sep">‖</span> de népszavazás erősítette meg.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'Az első konzul legfontosabb jogosítványa a törvénykezdeményezési jog volt <span class="sep">‖</span> a három konzul közötti vita esetén többségi döntés érvényesült.', ans:'B', exp:'Az első fele igaz. A második hamis: az első konzul döntött.'},
+        {q:'Az 1799. évi francia alkotmány létrehozta a külön Alkotmánybíróságot, amely jogosult volt megítélni a törvények alkotmányosságát <span class="sep">‖</span> az Alkotmánybíróság megsemmisíthette az alkotmányellenes törvényeket.', ans:'B', exp:'A Szenátus töltötte be az alkotmányőri szerepet. Megsemmisítési jog nem volt.'},
+        {q:'Az 1799. évi francia alkotmány szerint az Államtanácsnak nem volt hatásköre közigazgatási perekben <span class="sep">‖</span> 1872-ig nem volt Franciaországban semmiféle közigazgatási bíróság.', ans:'C', exp:'Az első fele hamis (az Államtanács eljárt közig. ügyekben). A második fele igaz.'},
+        {q:'Az 1799. évi francia alkotmány szerint a Szenátus első 31 tagját a második és a harmadik konzul nevezte ki <span class="sep">‖</span> a többi tagot a Törvényhozó Testület által javasolt személyek közül a Szenátus választotta.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'Az 1799. évi francia alkotmány létrehozta az Államtanácsot <span class="sep">‖</span> az Államtanács feladata volt többek között a törvényjavaslatok kidolgozása és a közigazgatási rendszabályok megalkotása.', ans:'A', exp:'Mindkét fele igaz.'},
+        {q:'Az 1799. évi francia alkotmány szerint a Törvényhozó Testület tagjait a választópolgárok közvetlenül választották <span class="sep">‖</span> a választás egyéni választókörületekre épülő többségi rendszerre épült.', ans:'D', exp:'Mindkét fele hamis. Közvetett választás, listás rendszer.'},
+      ]},
+      { type:'q', id:'VII', title:'VII. Code civil vs BGB', sub:'A = csak Code civil · B = csak BGB · C = mindkettő · D = egyik sem', opts:A4, num:40, items:[
+        {q:'A kodifikációt tárgyaló tanácsban maga az államfő elnökölt.', ans:'A', exp:'Napóleon személyesen vezette az üléseket.'},
+        {q:'A kései liberalizmus terméke: érvényesítette a polgárság érdekeit, de sokat megőrzött a rendi korszak magánjogi hagyományaiból.', ans:'B', exp:'Ez a BGB jellemzése.'},
+        {q:'A kor szellemének megfelelően a parlamenti elfogadás után a polgárok népszavazáson erősítették meg.', ans:'D', exp:'Sem a Code civilt, sem a BGB-t nem erősítette meg népszavazás.'},
+        {q:'Tartalmazta az adásvételre vonatkozó legfontosabb szabályokat.', ans:'C', exp:'Mindkettő tartalmaz adásvételi szabályokat.'},
+        {q:'Kötelmek szerződésből, mintegy-szerződésből, károkozásból és mintegy-károkozásból fakadhatnak.', ans:'C', exp:'A négyes kötelmi felosztás mindkét kódexben megjelenik.'},
+        {q:'Absztrakt fogalmi rendszer, tárgyszerűség, tudományos precizitás jellemzi, rendkívül részletesen tárgyalja a teljesítés szabályait és a szerződések általános előírásait.', ans:'B', exp:'Ez a BGB jellemzője.'},
+        {q:'Legterjedelmesebb része a családi jogról szóló könyve, amely nem nélkülözi a patriarchális jegyeket.', ans:'A', exp:'A Code civil-ben a családjogi rész a leghosszabb.'},
+        {q:'Természetjogi kódex volt.', ans:'A', exp:'A Code civil természetjogi alapokon nyugszik.'},
+        {q:'Nem tartalmazta a kereskedelmi jog szabályait.', ans:'C', exp:'Sem a Code civil, sem a BGB nem tartalmaz kereskedelmi jogot.'},
+        {q:'Felelősségi rendszere eredetileg a vétkességen alapult, de a szabály értelmezésével később lehetővé vált a veszélyes üzemi felelősség kifejlesztése az objektív felelősség elve alapján.', ans:'A', exp:'A Code civil 1382. cikke alapján bontotta ki a bírói gyakorlat az objektív felelősséget.'},
+        {q:'A kódex rendszerében a domináns tulajdoni forma a köztulajdon, a magántulajdon kivételes, de védett.', ans:'D', exp:'Mindkettő a magántulajdon védelmére épül.'},
+      ]},
+    ]
+  },
+];
+
+// ─────────────────────────────────────────────
+// EXAM MODE LOGIC
+// ─────────────────────────────────────────────
+let examState = null;
+
+function enterExamMode() {
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('main-nav').style.display = 'none';
+  document.getElementById('exam-view').classList.add('visible');
+  document.getElementById('exam-active').classList.remove('visible');
+  document.getElementById('exam-active').innerHTML = '';
+  document.getElementById('exam-picker').style.display = 'block';
+  document.getElementById('exam-mode-btn').textContent = '← Vissza a tesztekhez';
+  document.getElementById('exam-mode-btn').onclick = exitExamMode;
+  renderExamPicker();
+}
+
+function exitExamMode() {
+  document.getElementById('main-content').style.display = '';
+  document.getElementById('main-nav').style.display = '';
+  document.getElementById('exam-view').classList.remove('visible');
+  document.getElementById('exam-mode-btn').textContent = '📝 Vizsgázás';
+  document.getElementById('exam-mode-btn').onclick = enterExamMode;
+  examState = null;
+}
+
+function renderExamPicker() {
+  const picker = document.getElementById('exam-picker');
+  picker.innerHTML = '<h2>Válassz vizsgalapot!</h2><div class="exam-cards"></div>';
+  const cards = picker.querySelector('.exam-cards');
+  EXAMS.forEach(exam => {
+    const card = document.createElement('div');
+    card.className = 'exam-card';
+    card.innerHTML = '<h3>'+exam.title+'</h3><p>'+exam.desc+'</p>';
+    card.onclick = () => startExam(exam);
+    cards.appendChild(card);
+  });
+}
+
+function startExam(exam) {
+  document.getElementById('exam-picker').style.display = 'none';
+  const active = document.getElementById('exam-active');
+  active.classList.add('visible');
+  active.innerHTML = '';
+  examState = { sel:{}, tlSel:{}, totalC:0, totalA:0, done:false, log:[] };
+
+  const backBtn = document.createElement('button');
+  backBtn.className = 'exam-back';
+  backBtn.textContent = '← Vizsgalap-választó';
+  backBtn.onclick = () => {
+    document.getElementById('exam-picker').style.display = 'block';
+    active.classList.remove('visible');
+    active.innerHTML = '';
+    examState = null;
+  };
+  active.appendChild(backBtn);
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-family:"Playfair Display",serif;font-size:1.2rem;color:var(--gold);margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);';
+  title.textContent = exam.title;
+  active.appendChild(title);
+
+  const cardMaps = {};
+  const rowMaps = {};
+
+  exam.blocks.forEach(blk => {
+    const wrap = document.createElement('div');
+    wrap.style.marginBottom = '2rem';
+
+    const bTitle = document.createElement('div');
+    bTitle.style.cssText = 'font-size:.95rem;font-weight:bold;color:var(--gold);margin-bottom:.25rem;';
+    bTitle.textContent = blk.title;
+    wrap.appendChild(bTitle);
+
+    if (blk.sub) {
+      const bSub = document.createElement('div');
+      bSub.style.cssText = 'font-size:.78rem;color:var(--dim);margin-bottom:.8rem;';
+      bSub.textContent = blk.sub;
+      wrap.appendChild(bSub);
+    }
+
+    if (blk.type === 'q') {
+      cardMaps[blk.id] = [];
+      blk.items.forEach((item, ii) => {
+        const num = blk.num + ii;
+        const card = document.createElement('div');
+        card.className = 'eq-card';
+
+        const body = document.createElement('div');
+        body.className = 'eq-body';
+        body.innerHTML = '<span class="eq-num">'+num+'.</span><span class="eq-text">'+item.q+'</span>';
+        const res = document.createElement('span');
+        res.className = 'eq-res';
+        body.appendChild(res);
+
+        const opts = document.createElement('div');
+        opts.className = 'eq-opts';
+        const bm = {};
+
+        blk.opts.forEach(o => {
+          const b = document.createElement('button');
+          b.style.cssText = ED;
+          b.textContent = o.l;
+          bm[o.v] = b;
+          b.addEventListener('click', () => {
+            if (examState.done) return;
+            Object.values(bm).forEach(x => x.style.cssText = ED);
+            b.style.cssText = EDS;
+            examState.sel[blk.id+'_'+ii] = o.v;
+            checkExamReady(exam, hint);
+          });
+          opts.appendChild(b);
+        });
+
+        card._bm = bm; card._ans = item.ans; card._exp = item.exp;
+        const exp = document.createElement('div');
+        exp.className = 'eq-exp';
+        exp.textContent = item.exp;
+
+        card.appendChild(body); card.appendChild(opts); card.appendChild(exp);
+        wrap.appendChild(card);
+        cardMaps[blk.id].push(card);
+      });
+    } else {
+      rowMaps[blk.id] = [];
+      blk.groups.forEach(g => {
+        const box = document.createElement('div');
+        box.className = 'eq-tl-box';
+        const shuffled = [...g.items].sort(() => Math.random() - .5);
+        shuffled.forEach((item, ii) => {
+          const rid = blk.id+'_'+ii;
+          const row = document.createElement('div');
+          row.className = 'eq-tl-row';
+          row.dataset.ans = item.letter;
+
+          const og = document.createElement('div');
+          og.className = 'eq-tl-opts';
+          const bm = {};
+          ['A','B','C','D','E'].forEach(l => {
+            const b = document.createElement('button');
+            b.style.cssText = ED; b.textContent = l; bm[l] = b;
+            b.addEventListener('click', () => {
+              if (examState.done) return;
+              Object.values(bm).forEach(x => x.style.cssText = ED);
+              b.style.cssText = EDS;
+              examState.tlSel[rid] = l;
+              checkExamReady(exam, hint);
+            });
+            og.appendChild(b);
+          });
+          row._bm = bm; row._letter = item.letter; row._year = item.year;
+
+          const lbl = document.createElement('span');
+          lbl.className = 'eq-tl-label'; lbl.textContent = item.label;
+          const yr = document.createElement('span');
+          yr.className = 'eq-tl-year'; yr.textContent = item.year;
+
+          row.appendChild(og); row.appendChild(lbl); row.appendChild(yr);
+          box.appendChild(row);
+          rowMaps[blk.id].push({row, rid, item});
+        });
+        wrap.appendChild(box);
+      });
+    }
+    active.appendChild(wrap);
+  });
+
+  // toolbar
+  const toolbar = document.createElement('div');
+  toolbar.className = 'exam-toolbar';
+
+  const checkBtn = document.createElement('button');
+  checkBtn.textContent = 'Ellenőrzés';
+
+  const revBtn = document.createElement('button');
+  revBtn.textContent = 'Mutasd a válaszokat';
+
+  const hint = document.createElement('span');
+  hint.className = 'exam-hint';
+  hint.textContent = 'Töltsd ki az összes kérdést!';
+
+  const resultBox = document.createElement('div');
+  resultBox.className = 'result-box';
+  resultBox.innerHTML = '<h3>Eredményeid – másold be és küldd el</h3><pre id="exam-result-text"></pre><button style="margin-top:.6rem;font-size:13px;" onclick="copyExamResult()">Másolás</button>';
+
+  function allDone() {
+    for (const blk of exam.blocks) {
+      if (blk.type === 'q') {
+        for (let i = 0; i < blk.items.length; i++) {
+          if (!examState.sel[blk.id+'_'+i]) return false;
+        }
+      } else {
+        for (const g of blk.groups) {
+          for (let i = 0; i < g.items.length; i++) {
+            if (!examState.tlSel[blk.id+'_'+i]) return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  function checkExamReady(exam, hint) {
+    hint.textContent = allDone() ? 'Kész! Nyomd meg az Ellenőrzést.' : 'Töltsd ki az összes kérdést!';
+  }
+
+  checkBtn.addEventListener('click', () => {
+    if (!allDone()) { hint.textContent = 'Még nem töltötted ki az összes kérdést!'; return; }
+    examState.done = true;
+    checkBtn.disabled = true; revBtn.disabled = true;
+    examState.log = [];
+
+    exam.blocks.forEach(blk => {
+      examState.log.push('\n' + blk.title);
+      if (blk.type === 'q') {
+        cardMaps[blk.id].forEach((card, ii) => {
+          const chosen = examState.sel[blk.id+'_'+ii] || '–';
+          const ans = card._ans;
+          const isRight = chosen === ans;
+          if (isRight) examState.totalC++;
+          examState.totalA++;
+
+          Object.entries(card._bm).forEach(([v,b]) => {
+            if (v===ans) b.style.cssText = (isRight&&v===chosen)?EDC:EDR;
+            else if (v===chosen&&!isRight) b.style.cssText = EDW;
+            else { b.style.cssText = ED; b.style.cursor='default'; }
+          });
+
+          const res = card.querySelector('.eq-res');
+          res.textContent = isRight?'✓':'✗';
+          res.style.color = isRight?'#2e7d4f':'#aa3333';
+          card.querySelector('.eq-exp').classList.add('show');
+          card.classList.add(isRight?'ok':'err');
+          examState.log.push((blk.num+ii)+'. '+(isRight?'✓':'✗')+' Te: '+chosen+' | Helyes: '+ans);
+        });
+      } else {
+        rowMaps[blk.id].forEach((r, ri) => {
+          const chosen = examState.tlSel[r.rid] || '–';
+          const ans = r.item.letter;
+          const isRight = chosen === ans;
+          if (isRight) examState.totalC++;
+          examState.totalA++;
+
+          Object.entries(r.row._bm).forEach(([l,b]) => {
+            if (l===ans) b.style.cssText = (isRight&&l===chosen)?EDC:EDR;
+            else if (l===chosen&&!isRight) b.style.cssText = EDW;
+            else { b.style.cssText = ED; b.style.cursor='default'; }
+          });
+          r.row.querySelector('.eq-tl-year').classList.add('show');
+          examState.log.push(r.item.label+': Te: '+chosen+' | Helyes: '+ans+' ('+r.item.year+') '+(isRight?'✓':'✗'));
+        });
+      }
+    });
+
+    hint.textContent = examState.totalC + ' / ' + examState.totalA + ' helyes';
+    hint.style.color = examState.totalC === examState.totalA ? '#2e7d4f' : '#aa3333';
+    document.getElementById('exam-result-text').textContent = 'EREDMÉNY: '+examState.totalC+'/'+examState.totalA+'\n'+examState.log.join('\n');
+    resultBox.classList.add('show');
+  });
+
+  revBtn.addEventListener('click', () => {
+    examState.done = true;
+    checkBtn.disabled = true; revBtn.disabled = true;
+    exam.blocks.forEach(blk => {
+      if (blk.type === 'q') {
+        cardMaps[blk.id].forEach(card => {
+          Object.entries(card._bm).forEach(([v,b]) => {
+            b.style.cssText = v===card._ans?EDR:ED; b.style.cursor='default';
+          });
+          card.querySelector('.eq-exp').classList.add('show');
+          card.classList.add('rev');
+        });
+      } else {
+        rowMaps[blk.id].forEach(r => {
+          Object.entries(r.row._bm).forEach(([l,b]) => {
+            b.style.cssText = l===r.row._letter?EDR:ED; b.style.cursor='default';
+          });
+          r.row.querySelector('.eq-tl-year').classList.add('show');
+        });
+      }
+    });
+    hint.textContent = 'Megoldás megmutatva';
+  });
+
+  toolbar.appendChild(checkBtn);
+  toolbar.appendChild(revBtn);
+  toolbar.appendChild(hint);
+  active.appendChild(toolbar);
+  active.appendChild(resultBox);
+}
+
+function copyExamResult() {
+  const txt = document.getElementById('exam-result-text').textContent;
+  navigator.clipboard.writeText(txt).then(()=>alert('Másolva!')).catch(()=>alert('Jelöld ki és másold be kézzel.'));
+}
+
 
 // ─────────────────────────────────────────────
 // INIT
